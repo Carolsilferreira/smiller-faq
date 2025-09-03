@@ -1,0 +1,56 @@
+body {
+  font-family: Arial, sans-serif;
+  max-width: 800px;
+  margin: 24px auto;
+  padding: 0 16px;
+}
+
+h1 {
+  font-size: 22px;
+  color: #ADD8E6;
+}
+
+input {
+  width: 100%;
+  padding: 10px;
+  margin: 16px 0;
+  font-size: 16px;
+}
+
+details {
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 12px;
+  margin: 10px 0;
+}
+
+summary {
+  font-weight: 600;
+  cursor: pointer;
+}
+
+mark {
+  background: yellow;
+}
+
+.muted {
+  color: #666;
+  font-size: 12px;
+}
+
+/* ===== Novo estilo para botão Copiar ===== */
+.copy-btn {
+  padding: 6px 12px;
+  cursor: pointer;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  background: #f7f7f7;
+  font-size: 14px;
+  transition: background 0.2s, color 0.2s;
+}
+
+.copy-btn:hover {
+  background: #e6f2ff;
+  border-color: #99ccee;
+  color: #004080;
+}
