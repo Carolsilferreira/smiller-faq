@@ -1,15 +1,10 @@
-// ===============================
-// Dados do FAQ
-// ===============================
 const dados = [
   { q: 'O preço estimado a partir das fotos é o preço final?', a: 'O valor passado a partir das fotos é apenas uma estimativa para que você tenha um norte a respeito da complexidade e do valor do tratamento. O preço definitivo vem com a análise da documentação e confecção do planejamento do caso.' },
   { q: 'Qual o prazo de entrega após aprovação?', a: 'O prazo é de 7 dias úteis de fabricação + prazo de entrega para sua cidade' }
   // (...) restante omitido por brevidade mas pode incluir tudo
 ];
 
-// ===============================
-// Utilidades
-// ===============================
+
 function highlight(text, term) {
   if (!term) return text;
   const re = new RegExp(`(${term})`, 'gi');
@@ -42,9 +37,7 @@ async function copyText(text) {
   }
 }
 
-// ===============================
-// Renderização
-// ===============================
+
 function render(lista, termo) {
   const root = document.getElementById('faqs');
   root.innerHTML = '';
@@ -90,9 +83,7 @@ function render(lista, termo) {
   });
 }
 
-// ===============================
-// Filtro
-// ===============================
+
 function filtrar() {
   const termo = (document.getElementById('busca').value || '').toLowerCase();
   const res = dados.filter((x) => (x.q + ' ' + x.a).toLowerCase().includes(termo));
