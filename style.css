@@ -34,7 +34,8 @@ mark {
   color: inherit;             
   text-decoration: underline;  
   text-decoration-color: #ADD8E6; 
-  text-decoration-thickness: 2px; 
+  text-decoration-thickness: 6px;
+  text-underline-offset: -2px; 
 }
 
 .muted {
