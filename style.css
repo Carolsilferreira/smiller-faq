@@ -30,12 +30,10 @@ summary {
 }
 
 mark {
-  background: none;            
-  color: inherit;             
-  text-decoration: underline;  
-  text-decoration-color: #ADD8E6; 
-  text-decoration-thickness: 6px;
-  text-underline-offset: -2px; 
+  background: rgba(77, 166, 255, 0.5); 
+  color: inherit;
+  padding: 0 2px;                      
+  border-radius: 2px;                  
 }
 
 .muted {
