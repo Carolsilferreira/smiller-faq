@@ -101,7 +101,7 @@ function render(lista, termo) {
       const ok = await copyText(plain);
       const old = btnCopy.textContent;
       btnCopy.textContent = ok ? 'Copiado!' : 'Falhou :(';
-      setTimeout(() => (btnCopy.textContent = old), 1500);
+      setTimeout(() => (btnCopy.textContent = old), 1000);
     });
 
     actions.appendChild(btnCopy);
