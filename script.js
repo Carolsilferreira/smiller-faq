@@ -100,7 +100,7 @@ function render(lista, termo) {
       const plain = htmlToPlainText(item.a);
       const ok = await copyText(plain);
       const old = btnCopy.textContent;
-      btnCopy.textContent = ok ? '✅Copiado!' : '❌Falhou :(';
+      btnCopy.textContent = ok ? 'Copiado!✅' : 'Falhou ❌ :(';
       setTimeout(() => (btnCopy.textContent = old), 1000);
     });
 
