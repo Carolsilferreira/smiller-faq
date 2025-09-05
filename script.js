@@ -110,6 +110,15 @@ function render(lista, termo) {
     d.appendChild(p);
     d.appendChild(actions);
 
+
+    d.addEventListener('toggle', () => {
+    if (d.open) {
+      document.querySelectorAll('#faqs details').forEach((det) => {
+        if (det !== d) det.removeAttribute('open');
+      });
+    }
+  });
+
     root.appendChild(d);
   });
 }
