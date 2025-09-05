@@ -30,7 +30,11 @@ summary {
 }
 
 mark {
-  background: yellow;
+   background: none;            
+  color: inherit;             
+  text-decoration: underline;  
+  text-decoration-color: #2a7bd8; 
+  text-decoration-thickness: 2px; 
 }
 
 .muted {
