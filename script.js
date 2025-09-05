@@ -110,7 +110,6 @@ function render(lista, termo) {
     d.appendChild(p);
     d.appendChild(actions);
 
-
     d.addEventListener('toggle', () => {
     if (d.open) {
       document.querySelectorAll('#faqs details').forEach((det) => {
