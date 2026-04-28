@@ -46,6 +46,8 @@ const dadosIniciais = [
   {q:'Como funciona o SMILLER DAY?', a:'O Smiller Day é uma ação onde a nossa equipe vai até a sua clínica com scanner intraoral e toda a estrutura necessária para realizar os escaneamentos dos seus pacientes interessados em alinhadores. <br><br>Funciona assim: você agenda os pacientes interessados e, no dia combinado, fazemos os escaneamentos de forma rápida, confortável e 100% digital, sem necessidade de moldagem. <br><br>É uma ótima forma de otimizar o seu tempo, oferecer uma experiência mais moderna para o paciente e aumentar a conversão de tratamentos com alinhadores.'}
 ];
 
+let dados = [...dadosIniciais];
+
 const dadosSalvos = localStorage.getItem('faqDados');
 
 if (dadosSalvos) {
