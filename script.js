@@ -46,30 +46,22 @@ const dadosIniciais = [
   {q:'Como funciona o SMILLER DAY?', a:'O Smiller Day é uma ação onde a nossa equipe vai até a sua clínica com scanner intraoral e toda a estrutura necessária para realizar os escaneamentos dos seus pacientes interessados em alinhadores. <br><br>Funciona assim: você agenda os pacientes interessados e, no dia combinado, fazemos os escaneamentos de forma rápida, confortável e 100% digital, sem necessidade de moldagem. <br><br>É uma ótima forma de otimizar o seu tempo, oferecer uma experiência mais moderna para o paciente e aumentar a conversão de tratamentos com alinhadores.'}
 ];
 
-/* ── Persistência local ─────────────────────────────────────────── */
-const STORAGE_KEY = 'smiller_faq_dados';
+const dadosSalvos = localStorage.getItem('faqDados');
 
-function carregarDados() {
-  try {
-    const salvo = localStorage.getItem(STORAGE_KEY);
-    if (salvo) return JSON.parse(salvo);
-  } catch(e) {}
-  return dadosIniciais.map((d, i) => ({ ...d, id: i }));
+if (dadosSalvos) {
+  dados.splice(0, dados.length, ...JSON.parse(dadosSalvos));
 }
 
 function salvarDados() {
-  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(lista)); } catch(e) {}
+  localStorage.setItem('faqDados', JSON.stringify(dados));
 }
 
-/* ── Estado ─────────────────────────────────────────────────────── */
-let lista = carregarDados();
-let nextId = lista.length ? Math.max(...lista.map(x => x.id)) + 1 : 0;
-let editandoId = null;
-
-/* ── Utilitários ────────────────────────────────────────────────── */
 function highlight(text, term) {
   if (!term) return text;
-  const re = new RegExp(`(${term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+
+  const termoSeguro = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const re = new RegExp(`(${termoSeguro})`, 'gi');
+
   return text.replace(re, '<mark>$1</mark>');
 }
 
@@ -93,21 +85,25 @@ async function copyText(text) {
       document.execCommand('copy');
       document.body.removeChild(ta);
     }
+
     return true;
-  } catch { return false; }
+  } catch {
+    return false;
+  }
 }
 
-/* ── Renderização ───────────────────────────────────────────────── */
 function render(lista, termo) {
   const root = document.getElementById('faqs');
   root.innerHTML = '';
 
   if (lista.length === 0) {
-    root.innerHTML = '<p style="padding:1rem;color:#666;">Nenhum resultado encontrado.</p>';
+    root.innerHTML = '<p>Nenhum resultado encontrado.</p>';
     return;
   }
 
   lista.forEach((item) => {
+    const indexReal = dados.indexOf(item);
+
     const d = document.createElement('details');
 
     const s = document.createElement('summary');
@@ -117,46 +113,50 @@ function render(lista, termo) {
     p.innerHTML = highlight(item.a, termo);
 
     const actions = document.createElement('div');
-    actions.className = 'faq-actions';
+    actions.style.display = 'flex';
+    actions.style.gap = '8px';
+    actions.style.marginTop = '8px';
 
-    /* Botão Copiar */
     const btnCopy = document.createElement('button');
     btnCopy.textContent = 'Copiar';
     btnCopy.className = 'copy-btn';
+
     btnCopy.addEventListener('click', async (ev) => {
       ev.stopPropagation();
+
       const plain = htmlToPlainText(item.a);
       const ok = await copyText(plain);
+
       const old = btnCopy.textContent;
       btnCopy.textContent = ok ? 'Copiado! ✅' : 'Falhou ❌';
-      setTimeout(() => (btnCopy.textContent = old), 1500);
+
+      setTimeout(() => {
+        btnCopy.textContent = old;
+      }, 1000);
     });
 
-    /* Botão Editar */
     const btnEdit = document.createElement('button');
     btnEdit.textContent = 'Editar';
-    btnEdit.className = 'copy-btn';
+    btnEdit.className = 'edit-btn';
+
     btnEdit.addEventListener('click', (ev) => {
       ev.stopPropagation();
-      abrirModal(item.id);
-    });
 
-    /* Botão Excluir */
-    const btnDel = document.createElement('button');
-    btnDel.textContent = 'Excluir';
-    btnDel.className = 'copy-btn del-btn';
-    btnDel.addEventListener('click', (ev) => {
-      ev.stopPropagation();
-      if (confirm('Tem certeza que deseja excluir esta pergunta?')) {
-        lista = lista.filter(x => x.id !== item.id);
-        salvarDados();
-        filtrar();
-      }
+      const novaPergunta = prompt('Editar pergunta:', item.q);
+      if (!novaPergunta || !novaPergunta.trim()) return;
+
+      const novaResposta = prompt('Editar resposta:', htmlToPlainText(item.a));
+      if (!novaResposta || !novaResposta.trim()) return;
+
+      dados[indexReal].q = novaPergunta.trim();
+      dados[indexReal].a = novaResposta.trim().replace(/\n/g, '<br>');
+
+      salvarDados();
+      filtrar();
     });
 
     actions.appendChild(btnCopy);
     actions.appendChild(btnEdit);
-    actions.appendChild(btnDel);
 
     d.appendChild(s);
     d.appendChild(p);
@@ -174,111 +174,32 @@ function render(lista, termo) {
   });
 }
 
-/* ── Filtro ─────────────────────────────────────────────────────── */
 function filtrar() {
   const termo = (document.getElementById('busca').value || '').toLowerCase();
-  const res = lista.filter((x) => (x.q + ' ' + x.a).toLowerCase().includes(termo));
+
+  const res = dados.filter((x) =>
+    (x.q + ' ' + x.a).toLowerCase().includes(termo)
+  );
+
   render(res, termo);
 }
 
-/* ── Modal ──────────────────────────────────────────────────────── */
-function abrirModal(id) {
-  editandoId = (id !== undefined) ? id : null;
-  const modal = document.getElementById('faq-modal');
-  const tituloEl = document.getElementById('modal-titulo');
-  const inpQ = document.getElementById('modal-pergunta');
-  const inpA = document.getElementById('modal-resposta');
+document.getElementById('btnNovaPergunta').addEventListener('click', () => {
+  const pergunta = prompt('Digite a nova pergunta:');
+  if (!pergunta || !pergunta.trim()) return;
 
-  if (editandoId !== null) {
-    const item = lista.find(x => x.id === editandoId);
-    tituloEl.textContent = 'Editar pergunta';
-    inpQ.value = item.q;
-    inpA.value = item.a;
-  } else {
-    tituloEl.textContent = 'Nova pergunta';
-    inpQ.value = '';
-    inpA.value = '';
-  }
+  const resposta = prompt('Digite a resposta:');
+  if (!resposta || !resposta.trim()) return;
 
-  modal.style.display = 'flex';
-  setTimeout(() => inpQ.focus(), 50);
-}
-
-function fecharModal() {
-  document.getElementById('faq-modal').style.display = 'none';
-  editandoId = null;
-}
-
-function salvarModal() {
-  const q = document.getElementById('modal-pergunta').value.trim();
-  const a = document.getElementById('modal-resposta').value.trim();
-
-  if (!q || !a) {
-    alert('Preencha a pergunta e a resposta antes de salvar.');
-    return;
-  }
-
-  if (editandoId !== null) {
-    const item = lista.find(x => x.id === editandoId);
-    item.q = q;
-    item.a = a;
-  } else {
-    lista.push({ q, a, id: nextId++ });
-  }
+  dados.unshift({
+    q: pergunta.trim(),
+    a: resposta.trim().replace(/\n/g, '<br>')
+  });
 
   salvarDados();
-  fecharModal();
-  filtrar();
-}
 
-/* ── Inicialização ──────────────────────────────────────────────── */
-document.addEventListener('DOMContentLoaded', () => {
-  /* Injetar modal no body */
-  const modalHTML = `
-<div id="faq-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:1000;align-items:center;justify-content:center;padding:1rem;">
-  <div style="background:#fff;border-radius:12px;padding:1.5rem;width:100%;max-width:600px;max-height:90vh;overflow-y:auto;box-shadow:0 8px 32px rgba(0,0,0,0.18);">
-    <h2 id="modal-titulo" style="margin:0 0 1.25rem;font-size:18px;font-weight:600;color:#111;">Nova pergunta</h2>
-    <div style="margin-bottom:1rem;">
-      <label style="display:block;font-size:13px;color:#555;margin-bottom:6px;font-weight:500;">Pergunta</label>
-      <input id="modal-pergunta" type="text" placeholder="Digite a pergunta..." style="width:100%;padding:10px 12px;border:1px solid #ddd;border-radius:8px;font-size:14px;box-sizing:border-box;" />
-    </div>
-    <div style="margin-bottom:1rem;">
-      <label style="display:block;font-size:13px;color:#555;margin-bottom:6px;font-weight:500;">Resposta</label>
-      <textarea id="modal-resposta" placeholder="Digite a resposta... (use &lt;br&gt; para quebras de linha e &lt;strong&gt; para negrito)" style="width:100%;min-height:140px;padding:10px 12px;border:1px solid #ddd;border-radius:8px;font-size:14px;line-height:1.6;resize:vertical;box-sizing:border-box;font-family:inherit;"></textarea>
-      <p style="font-size:12px;color:#888;margin:4px 0 0;">Use &lt;br&gt; para quebra de linha e &lt;strong&gt;texto&lt;/strong&gt; para negrito.</p>
-    </div>
-    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:1.25rem;">
-      <button onclick="fecharModal()" style="padding:8px 20px;border:1px solid #ddd;border-radius:8px;background:#fff;color:#333;font-size:14px;cursor:pointer;">Cancelar</button>
-      <button onclick="salvarModal()" style="padding:8px 20px;border:none;border-radius:8px;background:#111;color:#fff;font-size:14px;cursor:pointer;font-weight:500;">Salvar</button>
-    </div>
-  </div>
-</div>`;
-
-  document.body.insertAdjacentHTML('beforeend', modalHTML);
-
-  /* Fechar modal clicando fora */
-  document.getElementById('faq-modal').addEventListener('click', (e) => {
-    if (e.target === document.getElementById('faq-modal')) fecharModal();
-  });
-
-  /* Fechar com Escape */
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') fecharModal();
-  });
-
-  /* Botão Nova Pergunta — injeta no toolbar se existir, senão cria */
-  const toolbar = document.querySelector('.toolbar') || document.querySelector('#toolbar');
-  if (toolbar) {
-    const btnNovo = document.createElement('button');
-    btnNovo.textContent = '+ Nova pergunta';
-    btnNovo.className = 'copy-btn novo-btn';
-    btnNovo.addEventListener('click', () => abrirModal());
-    toolbar.appendChild(btnNovo);
-  }
-
-  /* Listener do campo de busca */
-  const busca = document.getElementById('busca');
-  if (busca) busca.addEventListener('input', filtrar);
-
-  filtrar();
+  document.getElementById('busca').value = '';
+  render(dados, '');
 });
+
+render(dados, '');
