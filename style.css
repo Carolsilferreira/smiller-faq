@@ -10,11 +10,36 @@ h1 {
   color: #ADD8E6;
 }
 
+/* área de busca + botão */
+.search-area {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
 input {
-  width: 100%;
+  flex: 1;
   padding: 10px;
   margin: 16px 0;
   font-size: 16px;
+}
+
+/* botão nova pergunta */
+.nova-btn {
+  padding: 10px 14px;
+  cursor: pointer;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  background: #f7f7f7;
+  font-size: 14px;
+  transition: background 0.2s, color 0.2s;
+  white-space: nowrap;
+}
+
+.nova-btn:hover {
+  background: #e6f2ff;
+  border-color: #99ccee;
+  color: #004080;
 }
 
 details {
@@ -29,7 +54,6 @@ summary {
   cursor: pointer;
 }
 
-
 mark {
   background: yellow;
 }
@@ -39,8 +63,9 @@ mark {
   font-size: 12px;
 }
 
-
-.copy-btn {
+/* BOTÕES (Copiar e Editar iguais) */
+.copy-btn,
+.edit-btn {
   padding: 6px 12px;
   cursor: pointer;
   border: 1px solid #ddd;
@@ -50,7 +75,8 @@ mark {
   transition: background 0.2s, color 0.2s;
 }
 
-.copy-btn:hover {
+.copy-btn:hover,
+.edit-btn:hover {
   background: #e6f2ff;
   border-color: #99ccee;
   color: #004080;
