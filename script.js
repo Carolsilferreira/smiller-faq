@@ -46,24 +46,19 @@ const dadosIniciais = [
   {q:'Como funciona o SMILLER DAY?', a:'O Smiller Day é uma ação onde a nossa equipe vai até a sua clínica com scanner intraoral e toda a estrutura necessária para realizar os escaneamentos dos seus pacientes interessados em alinhadores. <br><br>Funciona assim: você agenda os pacientes interessados e, no dia combinado, fazemos os escaneamentos de forma rápida, confortável e 100% digital, sem necessidade de moldagem. <br><br>É uma ótima forma de otimizar o seu tempo, oferecer uma experiência mais moderna para o paciente e aumentar a conversão de tratamentos com alinhadores.'}
 ];
 
-let dados = [...dadosIniciais];
+const SUPABASE_URL = 'https://nvyfgwfjbdxzimseasvo.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_kibNcg9UNMA9RXeSC8Xa-w_12bfJOLr';
 
-const dadosSalvos = localStorage.getItem('faqDados');
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-if (dadosSalvos) {
-  dados.splice(0, dados.length, ...JSON.parse(dadosSalvos));
-}
+let dados = [];
 
-function salvarDados() {
-  localStorage.setItem('faqDados', JSON.stringify(dados));
-}
+// ---------------- UTIL ----------------
 
 function highlight(text, term) {
   if (!term) return text;
-
   const termoSeguro = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   const re = new RegExp(`(${termoSeguro})`, 'gi');
-
   return text.replace(re, '<mark>$1</mark>');
 }
 
@@ -87,12 +82,52 @@ async function copyText(text) {
       document.execCommand('copy');
       document.body.removeChild(ta);
     }
-
     return true;
   } catch {
     return false;
   }
 }
+
+// ---------------- CARREGAR FAQ ----------------
+
+async function carregarFaqs() {
+  const { data, error } = await supabaseClient
+    .from('faqs')
+    .select('*')
+    .order('id', { ascending: false });
+
+  if (error) {
+    console.error('Erro ao carregar:', error);
+
+    // fallback para dados locais
+    dados = dadosIniciais.map(item => ({
+      id: null,
+      q: item.q,
+      a: item.a
+    }));
+
+    render(dados, '');
+    return;
+  }
+
+  if (!data || data.length === 0) {
+    dados = dadosIniciais.map(item => ({
+      id: null,
+      q: item.q,
+      a: item.a
+    }));
+  } else {
+    dados = data.map(item => ({
+      id: item.id,
+      q: item.pergunta,
+      a: item.resposta
+    }));
+  }
+
+  render(dados, '');
+}
+
+// ---------------- RENDER ----------------
 
 function render(lista, termo) {
   const root = document.getElementById('faqs');
@@ -104,8 +139,6 @@ function render(lista, termo) {
   }
 
   lista.forEach((item) => {
-    const indexReal = dados.indexOf(item);
-
     const d = document.createElement('details');
 
     const s = document.createElement('summary');
@@ -119,6 +152,7 @@ function render(lista, termo) {
     actions.style.gap = '8px';
     actions.style.marginTop = '8px';
 
+    // COPIAR
     const btnCopy = document.createElement('button');
     btnCopy.textContent = 'Copiar';
     btnCopy.className = 'copy-btn';
@@ -130,31 +164,47 @@ function render(lista, termo) {
       const ok = await copyText(plain);
 
       const old = btnCopy.textContent;
-      btnCopy.textContent = ok ? 'Copiado! ✅' : 'Falhou ❌';
+      btnCopy.textContent = ok ? 'Copiado! ✅' : 'Erro ❌';
 
       setTimeout(() => {
         btnCopy.textContent = old;
       }, 1000);
     });
 
+    // EDITAR
     const btnEdit = document.createElement('button');
     btnEdit.textContent = 'Editar';
     btnEdit.className = 'edit-btn';
 
-    btnEdit.addEventListener('click', (ev) => {
+    btnEdit.addEventListener('click', async (ev) => {
       ev.stopPropagation();
 
+      if (!item.id) {
+        alert('Essa pergunta ainda está só no código. Cadastre ela novamente para editar online.');
+        return;
+      }
+
       const novaPergunta = prompt('Editar pergunta:', item.q);
-      if (!novaPergunta || !novaPergunta.trim()) return;
+      if (!novaPergunta) return;
 
       const novaResposta = prompt('Editar resposta:', htmlToPlainText(item.a));
-      if (!novaResposta || !novaResposta.trim()) return;
+      if (!novaResposta) return;
 
-      dados[indexReal].q = novaPergunta.trim();
-      dados[indexReal].a = novaResposta.trim().replace(/\n/g, '<br>');
+      const { error } = await supabaseClient
+        .from('faqs')
+        .update({
+          pergunta: novaPergunta,
+          resposta: novaResposta.replace(/\n/g, '<br>')
+        })
+        .eq('id', item.id);
 
-      salvarDados();
-      filtrar();
+      if (error) {
+        alert('Erro ao editar');
+        console.error(error);
+        return;
+      }
+
+      carregarFaqs();
     });
 
     actions.appendChild(btnCopy);
@@ -176,6 +226,8 @@ function render(lista, termo) {
   });
 }
 
+// ---------------- FILTRO ----------------
+
 function filtrar() {
   const termo = (document.getElementById('busca').value || '').toLowerCase();
 
@@ -186,22 +238,33 @@ function filtrar() {
   render(res, termo);
 }
 
-document.getElementById('btnNovaPergunta').addEventListener('click', () => {
+// ---------------- NOVA PERGUNTA ----------------
+
+document.getElementById('btnNovaPergunta').addEventListener('click', async () => {
   const pergunta = prompt('Digite a nova pergunta:');
-  if (!pergunta || !pergunta.trim()) return;
+  if (!pergunta) return;
 
   const resposta = prompt('Digite a resposta:');
-  if (!resposta || !resposta.trim()) return;
+  if (!resposta) return;
 
-  dados.unshift({
-    q: pergunta.trim(),
-    a: resposta.trim().replace(/\n/g, '<br>')
-  });
+  const { error } = await supabaseClient
+    .from('faqs')
+    .insert([
+      {
+        pergunta: pergunta,
+        resposta: resposta.replace(/\n/g, '<br>')
+      }
+    ]);
 
-  salvarDados();
+  if (error) {
+    alert('Erro ao salvar');
+    console.error(error);
+    return;
+  }
 
-  document.getElementById('busca').value = '';
-  render(dados, '');
+  carregarFaqs();
 });
 
-render(dados, '');
+// ---------------- START ----------------
+
+carregarFaqs();
