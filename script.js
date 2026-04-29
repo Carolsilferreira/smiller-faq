@@ -65,16 +65,13 @@ const SUPABASE_KEY = 'sb_publishable_kibNcg9UNMA9RXeSC8Xa-w_12bfJOLr';
 
 let supabaseClient = null;
 let dados = [];
+let modoEdicao = false;
+let idEditando = null;
 
 if (window.supabase) {
   supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 } else {
   console.error('Supabase não carregou. Verifique o index.html.');
-  dados = dadosIniciais.map(item => ({
-    id: null,
-    q: item.q,
-    a: item.a
-  }));
 }
 
 function highlight(text, term) {
@@ -112,6 +109,7 @@ async function copyText(text) {
 
 async function carregarFaqs() {
   if (!supabaseClient) {
+    dados = [];
     render(dados, '');
     return;
   }
@@ -123,24 +121,16 @@ async function carregarFaqs() {
 
   if (error) {
     console.error('Erro ao carregar Supabase:', error);
-
-    dados = dadosIniciais.map(item => ({
-      id: null,
-      q: item.q,
-      a: item.a
-    }));
-
+    dados = [];
     render(dados, '');
     return;
   }
 
-const dadosBanco = (data || []).map(item => ({
-  id: item.id,
-  q: item.pergunta,
-  a: item.resposta
-}));
-
-dados = dadosBanco;
+  dados = (data || []).map(item => ({
+    id: item.id,
+    q: item.pergunta,
+    a: item.resposta
+  }));
 
   render(dados, '');
 }
@@ -190,35 +180,9 @@ function render(lista, termo) {
     btnEdit.textContent = 'Editar';
     btnEdit.className = 'edit-btn';
 
-    btnEdit.addEventListener('click', async (ev) => {
+    btnEdit.addEventListener('click', (ev) => {
       ev.stopPropagation();
-
-      if (!item.id) {
-        alert('Essa pergunta ainda está só no código inicial. Para editar online, cadastre ela no Supabase ou crie novamente pelo botão Nova pergunta.');
-        return;
-      }
-
-      const novaPergunta = prompt('Editar pergunta:', item.q);
-      if (!novaPergunta || !novaPergunta.trim()) return;
-
-      const novaResposta = prompt('Editar resposta:', htmlToPlainText(item.a));
-      if (!novaResposta || !novaResposta.trim()) return;
-
-      const { error } = await supabaseClient
-        .from('faqs')
-        .update({
-          pergunta: novaPergunta.trim(),
-          resposta: novaResposta.trim().replace(/\n/g, '<br>')
-        })
-        .eq('id', item.id);
-
-      if (error) {
-        alert('Erro ao editar no Supabase.');
-        console.error(error);
-        return;
-      }
-
-      carregarFaqs();
+      abrirModal(item.q, htmlToPlainText(item.a), item.id);
     });
 
     actions.appendChild(btnCopy);
@@ -250,15 +214,8 @@ function filtrar() {
   render(res, termo);
 }
 
-document.getElementById('btnNovaPergunta').addEventListener('click', () => {
-  abrirModal();
-});
-
-let modoEdicao = false;
-let idEditando = null;
-
 function abrirModal(pergunta = '', resposta = '', id = null) {
-  document.getElementById('modal').style.display = 'flex';
+  document.getElementById('modal').classList.add('aberto');
 
   document.getElementById('modalPergunta').value = pergunta;
   document.getElementById('modalResposta').value = resposta;
@@ -268,7 +225,59 @@ function abrirModal(pergunta = '', resposta = '', id = null) {
 }
 
 function fecharModal() {
-  document.getElementById('modal').style.display = 'none';
+  document.getElementById('modal').classList.remove('aberto');
+  modoEdicao = false;
+  idEditando = null;
 }
+
+async function salvarModal() {
+  const pergunta = document.getElementById('modalPergunta').value.trim();
+  const resposta = document.getElementById('modalResposta').value.trim();
+
+  if (!pergunta || !resposta) {
+    alert('Preencha a pergunta e a resposta.');
+    return;
+  }
+
+  if (!supabaseClient) {
+    alert('Supabase não carregou.');
+    return;
+  }
+
+  let resultado;
+
+  if (modoEdicao && idEditando) {
+    resultado = await supabaseClient
+      .from('faqs')
+      .update({
+        pergunta: pergunta,
+        resposta: resposta.replace(/\n/g, '<br>')
+      })
+      .eq('id', idEditando);
+  } else {
+    resultado = await supabaseClient
+      .from('faqs')
+      .insert([
+        {
+          pergunta: pergunta,
+          resposta: resposta.replace(/\n/g, '<br>')
+        }
+      ]);
+  }
+
+  if (resultado.error) {
+    alert('Erro ao salvar no banco.');
+    console.error(resultado.error);
+    return;
+  }
+
+  fecharModal();
+  document.getElementById('busca').value = '';
+  carregarFaqs();
+}
+
+document.getElementById('btnNovaPergunta').addEventListener('click', () => {
+  abrirModal();
+});
 
 carregarFaqs();
