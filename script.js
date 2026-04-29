@@ -49,11 +49,19 @@ const dadosIniciais = [
 const SUPABASE_URL = 'https://nvyfgwfjbdxzimseasvo.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_kibNcg9UNMA9RXeSC8Xa-w_12bfJOLr';
 
-const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
+let supabaseClient = null;
 let dados = [];
 
-// ---------------- UTIL ----------------
+if (window.supabase) {
+  supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+} else {
+  console.error('Supabase não carregou. Verifique o index.html.');
+  dados = dadosIniciais.map(item => ({
+    id: null,
+    q: item.q,
+    a: item.a
+  }));
+}
 
 function highlight(text, term) {
   if (!term) return text;
@@ -88,18 +96,20 @@ async function copyText(text) {
   }
 }
 
-// ---------------- CARREGAR FAQ ----------------
-
 async function carregarFaqs() {
+  if (!supabaseClient) {
+    render(dados, '');
+    return;
+  }
+
   const { data, error } = await supabaseClient
     .from('faqs')
     .select('*')
     .order('id', { ascending: false });
 
   if (error) {
-    console.error('Erro ao carregar:', error);
+    console.error('Erro ao carregar Supabase:', error);
 
-    // fallback para dados locais
     dados = dadosIniciais.map(item => ({
       id: null,
       q: item.q,
@@ -127,8 +137,6 @@ async function carregarFaqs() {
   render(dados, '');
 }
 
-// ---------------- RENDER ----------------
-
 function render(lista, termo) {
   const root = document.getElementById('faqs');
   root.innerHTML = '';
@@ -152,7 +160,6 @@ function render(lista, termo) {
     actions.style.gap = '8px';
     actions.style.marginTop = '8px';
 
-    // COPIAR
     const btnCopy = document.createElement('button');
     btnCopy.textContent = 'Copiar';
     btnCopy.className = 'copy-btn';
@@ -171,7 +178,6 @@ function render(lista, termo) {
       }, 1000);
     });
 
-    // EDITAR
     const btnEdit = document.createElement('button');
     btnEdit.textContent = 'Editar';
     btnEdit.className = 'edit-btn';
@@ -180,26 +186,26 @@ function render(lista, termo) {
       ev.stopPropagation();
 
       if (!item.id) {
-        alert('Essa pergunta ainda está só no código. Cadastre ela novamente para editar online.');
+        alert('Essa pergunta ainda está só no código inicial. Para editar online, cadastre ela no Supabase ou crie novamente pelo botão Nova pergunta.');
         return;
       }
 
       const novaPergunta = prompt('Editar pergunta:', item.q);
-      if (!novaPergunta) return;
+      if (!novaPergunta || !novaPergunta.trim()) return;
 
       const novaResposta = prompt('Editar resposta:', htmlToPlainText(item.a));
-      if (!novaResposta) return;
+      if (!novaResposta || !novaResposta.trim()) return;
 
       const { error } = await supabaseClient
         .from('faqs')
         .update({
-          pergunta: novaPergunta,
-          resposta: novaResposta.replace(/\n/g, '<br>')
+          pergunta: novaPergunta.trim(),
+          resposta: novaResposta.trim().replace(/\n/g, '<br>')
         })
         .eq('id', item.id);
 
       if (error) {
-        alert('Erro ao editar');
+        alert('Erro ao editar no Supabase.');
         console.error(error);
         return;
       }
@@ -226,8 +232,6 @@ function render(lista, termo) {
   });
 }
 
-// ---------------- FILTRO ----------------
-
 function filtrar() {
   const termo = (document.getElementById('busca').value || '').toLowerCase();
 
@@ -238,33 +242,35 @@ function filtrar() {
   render(res, termo);
 }
 
-// ---------------- NOVA PERGUNTA ----------------
-
 document.getElementById('btnNovaPergunta').addEventListener('click', async () => {
   const pergunta = prompt('Digite a nova pergunta:');
-  if (!pergunta) return;
+  if (!pergunta || !pergunta.trim()) return;
 
   const resposta = prompt('Digite a resposta:');
-  if (!resposta) return;
+  if (!resposta || !resposta.trim()) return;
+
+  if (!supabaseClient) {
+    alert('Supabase não carregou. Verifique o index.html.');
+    return;
+  }
 
   const { error } = await supabaseClient
     .from('faqs')
     .insert([
       {
-        pergunta: pergunta,
-        resposta: resposta.replace(/\n/g, '<br>')
+        pergunta: pergunta.trim(),
+        resposta: resposta.trim().replace(/\n/g, '<br>')
       }
     ]);
 
   if (error) {
-    alert('Erro ao salvar');
+    alert('Erro ao salvar no Supabase.');
     console.error(error);
     return;
   }
 
+  document.getElementById('busca').value = '';
   carregarFaqs();
 });
-
-// ---------------- START ----------------
 
 carregarFaqs();
