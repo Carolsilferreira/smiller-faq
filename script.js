@@ -1,3 +1,17 @@
+const SENHA = '@Smiller123';
+
+if (!localStorage.getItem('acessoLiberado')) {
+  const senhaDigitada = prompt('Digite a senha para acessar o FAQ:');
+
+  if (senhaDigitada === SENHA) {
+    localStorage.setItem('acessoLiberado', 'true');
+  } else {
+    document.body.innerHTML = '<h2 style="text-align:center; margin-top:50px;">Acesso negado</h2>';
+    throw new Error('Acesso bloqueado');
+  }
+}
+
+
 const dadosIniciais = [
   {q:'O preço estimado a partir das fotos é o preço final?', a:'O valor passado a partir das fotos é apenas uma estimativa para que você tenha um norte a respeito da complexidade e do valor do tratamento. O preço definitivo vem com a análise da documentação e confecção do planejamento do caso.'},
   {q:'Qual o prazo de entrega após aprovação?', a:'O prazo é de 7 dias úteis de fabricação + prazo de entrega para sua cidade'},
