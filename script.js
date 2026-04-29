@@ -126,13 +126,7 @@ const dadosBanco = (data || []).map(item => ({
   a: item.resposta
 }));
 
-const dadosLocal = dadosIniciais.map(item => ({
-  id: null,
-  q: item.q,
-  a: item.a
-}));
-
-dados = [...dadosBanco, ...dadosLocal];
+dados = dadosBanco;
 
   render(dados, '');
 }
