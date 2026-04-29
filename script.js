@@ -120,19 +120,19 @@ async function carregarFaqs() {
     return;
   }
 
-  if (!data || data.length === 0) {
-    dados = dadosIniciais.map(item => ({
-      id: null,
-      q: item.q,
-      a: item.a
-    }));
-  } else {
-    dados = data.map(item => ({
-      id: item.id,
-      q: item.pergunta,
-      a: item.resposta
-    }));
-  }
+const dadosBanco = (data || []).map(item => ({
+  id: item.id,
+  q: item.pergunta,
+  a: item.resposta
+}));
+
+const dadosLocal = dadosIniciais.map(item => ({
+  id: null,
+  q: item.q,
+  a: item.a
+}));
+
+dados = [...dadosBanco, ...dadosLocal];
 
   render(dados, '');
 }
