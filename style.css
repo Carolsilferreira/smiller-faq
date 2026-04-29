@@ -81,3 +81,49 @@ mark {
   border-color: #99ccee;
   color: #004080;
 }
+
+/* MODAL */
+
+.modal {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+}
+
+.modal.aberto {
+  display: flex;
+}
+
+.modal-content {
+  background: white;
+  padding: 24px;
+  border-radius: 12px;
+  width: 90%;
+  max-width: 600px;
+  box-sizing: border-box;
+}
+
+/* inputs do modal */
+
+#modalPergunta,
+#modalResposta {
+  width: 100%;
+  box-sizing: border-box;
+  margin-bottom: 12px;
+  padding: 10px;
+  font-size: 15px;
+}
+
+#modalResposta {
+  height: 180px;
+  resize: vertical;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 10px;
+}
