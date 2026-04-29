@@ -281,4 +281,21 @@ document.getElementById('btnNovaPergunta').addEventListener('click', async () =>
   carregarFaqs();
 });
 
+let modoEdicao = false;
+let idEditando = null;
+
+function abrirModal(pergunta = '', resposta = '', id = null) {
+  document.getElementById('modal').style.display = 'flex';
+
+  document.getElementById('modalPergunta').value = pergunta;
+  document.getElementById('modalResposta').value = resposta;
+
+  modoEdicao = !!id;
+  idEditando = id;
+}
+
+function fecharModal() {
+  document.getElementById('modal').style.display = 'none';
+}
+
 carregarFaqs();
