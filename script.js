@@ -266,29 +266,5 @@ document.getElementById('btnNovaPergunta').addEventListener('click', async () =>
   document.getElementById('busca').value = '';
   carregarFaqs();
 });
-async function importarPerguntas() {
-  if (!supabaseClient) {
-    alert('Supabase não carregou');
-    return;
-  }
-
-  const itens = dadosIniciais.map(item => ({
-    pergunta: item.q,
-    resposta: item.a
-  }));
-
-  const { error } = await supabaseClient
-    .from('faqs')
-    .insert(itens);
-
-  if (error) {
-    console.error(error);
-    alert('Erro ao importar');
-    return;
-  }
-
-  alert('Importado com sucesso!');
-  carregarFaqs();
-}
 
 carregarFaqs();
