@@ -250,35 +250,8 @@ function filtrar() {
   render(res, termo);
 }
 
-document.getElementById('btnNovaPergunta').addEventListener('click', async () => {
-  const pergunta = prompt('Digite a nova pergunta:');
-  if (!pergunta || !pergunta.trim()) return;
-
-  const resposta = prompt('Digite a resposta:');
-  if (!resposta || !resposta.trim()) return;
-
-  if (!supabaseClient) {
-    alert('Supabase não carregou. Verifique o index.html.');
-    return;
-  }
-
-  const { error } = await supabaseClient
-    .from('faqs')
-    .insert([
-      {
-        pergunta: pergunta.trim(),
-        resposta: resposta.trim().replace(/\n/g, '<br>')
-      }
-    ]);
-
-  if (error) {
-    alert('Erro ao salvar no Supabase.');
-    console.error(error);
-    return;
-  }
-
-  document.getElementById('busca').value = '';
-  carregarFaqs();
+document.getElementById('btnNovaPergunta').addEventListener('click', () => {
+  abrirModal();
 });
 
 let modoEdicao = false;
