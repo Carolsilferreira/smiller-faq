@@ -46,19 +46,34 @@ const dadosIniciais = [
   {q:'Como funciona o SMILLER DAY?', a:'O Smiller Day é uma ação onde a nossa equipe vai até a sua clínica com scanner intraoral e toda a estrutura necessária para realizar os escaneamentos dos seus pacientes interessados em alinhadores. <br><br>Funciona assim: você agenda os pacientes interessados e, no dia combinado, fazemos os escaneamentos de forma rápida, confortável e 100% digital, sem necessidade de moldagem. <br><br>É uma ótima forma de otimizar o seu tempo, oferecer uma experiência mais moderna para o paciente e aumentar a conversão de tratamentos com alinhadores.'}
 ];
 
-const SUPABASE_URL = 'https://nvyfgwfjbdxzimseasvo.supabase.co';
-const SUPABASE_KEY = 'sb_publishable_kibNcg9UNMA9RXeSC8Xa-w_12bfJOLr';
+// ─── localStorage (substitui o Supabase) ───────────────────────────────────
+const STORAGE_KEY = 'smiller_faqs';
 
-let supabaseClient = null;
+function carregarDoStorage() {
+  try {
+    const salvo = localStorage.getItem(STORAGE_KEY);
+    if (salvo) return JSON.parse(salvo);
+  } catch (e) {}
+  return null;
+}
+
+function salvarNoStorage(lista) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(lista));
+}
+
+function inicializarDados() {
+  const salvo = carregarDoStorage();
+  if (salvo && salvo.length > 0) return salvo;
+  // Primeira vez: usa os dados iniciais e salva
+  const inicial = dadosIniciais.map((item, i) => ({ id: i + 1, q: item.q, a: item.a }));
+  salvarNoStorage(inicial);
+  return inicial;
+}
+// ───────────────────────────────────────────────────────────────────────────
+
 let dados = [];
 let modoEdicao = false;
 let idEditando = null;
-
-if (window.supabase) {
-  supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-} else {
-  console.error('Supabase não carregou. Verifique o index.html.');
-}
 
 function highlight(text, term) {
   if (!term) return text;
@@ -93,31 +108,8 @@ async function copyText(text) {
   }
 }
 
-async function carregarFaqs() {
-  if (!supabaseClient) {
-    dados = [];
-    render(dados, '');
-    return;
-  }
-
-  const { data, error } = await supabaseClient
-    .from('faqs')
-    .select('*')
-    .order('id', { ascending: false });
-
-  if (error) {
-    console.error('Erro ao carregar Supabase:', error);
-    dados = [];
-    render(dados, '');
-    return;
-  }
-
-  dados = (data || []).map(item => ({
-    id: item.id,
-    q: item.pergunta,
-    a: item.resposta
-  }));
-
+function carregarFaqs() {
+  dados = inicializarDados();
   render(dados, '');
 }
 
@@ -150,16 +142,11 @@ function render(lista, termo) {
 
     btnCopy.addEventListener('click', async (ev) => {
       ev.stopPropagation();
-
       const plain = htmlToPlainText(item.a);
       const ok = await copyText(plain);
-
       const old = btnCopy.textContent;
       btnCopy.textContent = ok ? 'Copiado! ✅' : 'Erro ❌';
-
-      setTimeout(() => {
-        btnCopy.textContent = old;
-      }, 1000);
+      setTimeout(() => { btnCopy.textContent = old; }, 1000);
     });
 
     const btnEdit = document.createElement('button');
@@ -192,20 +179,14 @@ function render(lista, termo) {
 
 function filtrar() {
   const termo = (document.getElementById('busca').value || '').toLowerCase();
-
-  const res = dados.filter((x) =>
-    (x.q + ' ' + x.a).toLowerCase().includes(termo)
-  );
-
+  const res = dados.filter((x) => (x.q + ' ' + x.a).toLowerCase().includes(termo));
   render(res, termo);
 }
 
 function abrirModal(pergunta = '', resposta = '', id = null) {
   document.getElementById('modal').classList.add('aberto');
-
   document.getElementById('modalPergunta').value = pergunta;
   document.getElementById('modalResposta').value = resposta;
-
   modoEdicao = !!id;
   idEditando = id;
 }
@@ -216,7 +197,7 @@ function fecharModal() {
   idEditando = null;
 }
 
-async function salvarModal() {
+function salvarModal() {
   const pergunta = document.getElementById('modalPergunta').value.trim();
   const resposta = document.getElementById('modalResposta').value.trim();
 
@@ -225,41 +206,23 @@ async function salvarModal() {
     return;
   }
 
-  if (!supabaseClient) {
-    alert('Supabase não carregou.');
-    return;
-  }
-
-  let resultado;
-
   if (modoEdicao && idEditando) {
-    resultado = await supabaseClient
-      .from('faqs')
-      .update({
-        pergunta: pergunta,
-        resposta: resposta.replace(/\n/g, '<br>')
-      })
-      .eq('id', idEditando);
+    // Editar existente
+    dados = dados.map(item =>
+      item.id === idEditando
+        ? { ...item, q: pergunta, a: resposta.replace(/\n/g, '<br>') }
+        : item
+    );
   } else {
-    resultado = await supabaseClient
-      .from('faqs')
-      .insert([
-        {
-          pergunta: pergunta,
-          resposta: resposta.replace(/\n/g, '<br>')
-        }
-      ]);
+    // Nova pergunta
+    const novoId = Date.now();
+    dados = [{ id: novoId, q: pergunta, a: resposta.replace(/\n/g, '<br>') }, ...dados];
   }
 
-  if (resultado.error) {
-    alert('Erro ao salvar no banco.');
-    console.error(resultado.error);
-    return;
-  }
-
+  salvarNoStorage(dados);
   fecharModal();
   document.getElementById('busca').value = '';
-  carregarFaqs();
+  render(dados, '');
 }
 
 document.getElementById('btnNovaPergunta').addEventListener('click', () => {
